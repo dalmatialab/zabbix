@@ -1,0 +1,42 @@
+imagePullPolicy: Always
+restartPolicy: Always
+
+mysql:
+  image: mysql
+  imageTag: 5.7.23
+  serviceName: zabbix-mysql-svc
+  database: zabbix
+  username: zabbix
+  password: zabbix
+  nodeSelector: false
+  storage:
+    enabled: false
+    volumeMounts:
+      - name: 
+        mountPath: 
+    volumes:
+      - name: 
+        hostPath:
+          path: 
+
+server:
+  image: zabbix/zabbix-server-mysql
+  imageTag: alpine-5.2.1
+  serviceName: zabbix-server-svc
+  nodeSelector: false
+  nodePort: 
+  storage:
+    enabled: false
+    volumeMounts:
+      - name: 
+        mountPath: 
+    volumes:
+      - name: 
+        hostPath:
+          path: 
+
+web:
+  image: zabbix/zabbix-web-apache-mysql
+  imageTag: alpine-5.2.1
+  nodeSelector: false
+  nodePort: 

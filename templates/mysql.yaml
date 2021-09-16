@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: zabbix-mysql
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: zabbix-mysql
+  template:
+    metadata:
+      labels:
+        app: zabbix-mysql
+    spec:
+      containers:
+      - name: teslab-zabbix-mysql
+        args: 
+          - --character-set-server=utf8
+          - --collation-server=utf8_bin
+        image: {{ .Values.mysql.image }}:{{ .Values.mysql.imageTag }}
+        imagePullPolicy: {{ .Values.imagePullPolicy }}
+        env:
+          - name: MYSQL_ROOT_PASSWORD
+            value: root
+          - name: MYSQL_DATABASE
+            value: {{ .Values.mysql.database }}
+          - name: MYSQL_USER
+            value: {{ .Values.mysql.username }}
+          - name: MYSQL_PASSWORD
+            value: {{ .Values.mysql.password }}   
+        ports:
+          - containerPort: 3306
+        {{- if .Values.mysql.storage.enabled }}
+        volumeMounts:
+        {{- .Values.mysql.storage.volumeMounts | toYaml | trimSuffix "\n" | nindent 8 }}
+      	{{- end }}
+      restartPolicy: {{ .Values.restartPolicy }}
+      {{- if .Values.mysql.storage.enabled }}
+      volumes:
+      {{- .Values.mysql.storage.volumes | toYaml | trimSuffix "\n" | nindent 6 }}
+      {{- end }}
+      {{- if .Values.mysql.nodeSelector }}
+      nodeSelector:
+        zabbix-mysql: "true"
+      {{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.mysql.serviceName }}
+spec:
+  ports:
+  - port: 3306
+    name: "3306"
+  selector:
+    app: zabbix-mysql
+---

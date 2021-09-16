@@ -1,0 +1,68 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: zabbix-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: zabbix-server
+  template:
+    metadata:
+      labels:
+        app: zabbix-server
+    spec:
+      containers:
+      - name: teslab-zabbix-server
+        image: {{ .Values.server.image }}:{{ .Values.server.imageTag }}
+        imagePullPolicy: {{ .Values.imagePullPolicy }}
+        env:
+          - name: DB_SERVER_HOST
+            value: {{ .Values.mysql.serviceName }}
+          - name: MYSQL_USER
+            value: {{ .Values.mysql.username }}   
+          - name: MYSQL_PASSWORD
+            value: {{ .Values.mysql.password }}
+          - name: ZBX_CACHESIZE
+            value: 2G
+        ports:
+          - containerPort: 10051
+        {{- if .Values.mysql.storage.enabled }}
+        volumeMounts:
+        {{- .Values.mysql.storage.volumeMounts | toYaml | trimSuffix "\n" | nindent 8 }}
+      	{{- end }}
+      restartPolicy: {{ .Values.restartPolicy }}
+      {{- if .Values.mysql.storage.enabled }}
+      volumes:
+      {{- .Values.mysql.storage.volumes | toYaml | trimSuffix "\n" | nindent 6 }}
+      {{- end }}
+      {{- if .Values.server.nodeSelector }}
+      nodeSelector:
+        zabbix-server: "true"
+      {{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.server.serviceName }}
+spec:
+  ports:
+  - port: 10051
+    name: "10051"
+  selector:
+    app: zabbix-server
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: zabbix-server-svc-ext
+spec:
+  ports:
+  - port: 10051
+    name: "10051"
+    targetPort: 10051
+    nodePort: {{ .Values.server.nodePort }}
+  selector:
+    app: zabbix-server
+  type: NodePort
+---

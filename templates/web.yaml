@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: zabbix-web
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: zabbix-web
+  template:
+    metadata:
+      labels:
+        app: zabbix-web
+    spec:
+      containers:
+      - name: teslab-zabbix-web
+        image: {{ .Values.web.image }}:{{ .Values.web.imageTag }}
+        imagePullPolicy: {{ .Values.imagePullPolicy }}
+        env:
+          - name: ZBX_SERVER_HOST
+            value: {{ .Values.server.serviceName }}
+          - name: PHP_TZ
+            value: Europe/Zagreb
+          - name: DB_SERVER_HOST
+            value: {{ .Values.mysql.serviceName }}
+          - name: MYSQL_USER
+            value: {{ .Values.mysql.username }}
+          - name: MYSQL_PASSWORD
+            value: {{ .Values.mysql.password }}
+        ports:
+          - containerPort: 80
+      restartPolicy: {{ .Values.restartPolicy }}
+      {{- if .Values.web.nodeSelector }}
+      nodeSelector:
+        zabbix-web: "true"
+      {{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: zabbix-web-svc
+spec:
+  ports:
+  - name: "80"
+    port: 80
+    targetPort: 8080
+  selector:
+    zabbix-app: zabbix-web
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: zabbix-web-svc-ext
+spec:
+  ports:
+  - port: 80
+    name: "80"
+    targetPort: 8080
+    nodePort: {{ .Values.web.nodePort }}
+  selector:
+    app: zabbix-web
+  type: NodePort
+---
